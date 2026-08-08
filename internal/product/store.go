@@ -3,6 +3,7 @@ package product
 import (
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -24,6 +25,7 @@ type Store struct {
 type StockUpdate struct {
 	ProductID string
 	Stock     int32
+	UpdatedAt time.Time
 }
 
 var (
@@ -107,7 +109,7 @@ func (s *Store) UpdateStock(productID string, delta int32) (Product, error) {
 	product.Stock = newStock
 	s.products[productID] = product
 
-	event := StockUpdate{ProductID: productID, Stock: newStock}
+	event := StockUpdate{ProductID: productID, Stock: newStock, UpdatedAt: time.Now().UTC()}
 	for ch, filter := range s.subscribers {
 		if filter != "" && filter != productID {
 			continue

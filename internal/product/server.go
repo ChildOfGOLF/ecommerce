@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Server struct {
@@ -86,6 +87,7 @@ func (s *Server) WatchStock(req *productv1.WatchStockRequest, stream productv1.P
 			if err := stream.Send(&productv1.StockUpdate{
 				ProductId: update.ProductID,
 				Stock:     update.Stock,
+				UpdatedAt: timestamppb.New(update.UpdatedAt),
 			}); err != nil {
 				return err
 			}

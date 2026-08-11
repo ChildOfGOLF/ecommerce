@@ -54,8 +54,41 @@ func (s *Server) CreateOrder(stream orderv1.OrderService_CreateOrderServer) erro
 	if _, err := s.userClient.GetUser(ctx, &userv1.GetUserRequest{UserId: userID}); err != nil {
 		return status.Errorf(codes.FailedPrecondition, "user check failed: %v", err)
 	}
-	
-	return nil
+
+	type reserved struct {
+		productID string
+		quantity  int32
+	}
+
+	var done []reserved
+
+	for _, item := range items {
+		_, err := s.productClient.UpdateStock(ctx, &productv1.UpdateStockRequest{
+			ProductId: item.ProductID,
+			Delta:     -item.Quantity,
+		})
+		if err != nil {
+			// откат списанных
+			for _, d := range done {
+				// TODO: retry with backoff || outbox паттерн || очередь с гарантом
+				// err ignore: если product service упадет навсегда рассинхрон
+				_, _ = s.productClient.UpdateStock(ctx, &productv1.UpdateStockRequest{
+					ProductId: d.productID,
+					Delta:     d.quantity,
+				})
+			}
+			return status.Errorf(codes.FailedPrecondition, "reserve stock for %s: %v", item.ProductID, err)
+		}
+
+		done = append(done, reserved{productID: item.ProductID, quantity: item.Quantity})
+	}
+
+	o, err := s.store.CreateOrder(userID, items)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	return stream.SendAndClose(&orderv1.CreateOrderResponse{Order: toProto(o)})
 }
 
 func (s *Server) GetOrder(ctx context.Context, req *orderv1.GetOrderRequest) (*orderv1.GetOrderResponse, error) {

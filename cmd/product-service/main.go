@@ -23,6 +23,10 @@ func main() {
 			interceptor.LoggingUnaryInterceptor,
 			interceptor.RecoveryUnaryInterceptor,
 		),
+		grpc.ChainStreamInterceptor(
+			interceptor.LoggingStreamInterceptor,
+			interceptor.RecoveryStreamInterceptor,
+		),
 	)
 
 	store := product.NewStore()

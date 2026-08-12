@@ -40,6 +40,10 @@ func main() {
 			interceptor.LoggingUnaryInterceptor,
 			interceptor.RecoveryUnaryInterceptor,
 		),
+		grpc.ChainStreamInterceptor(
+			interceptor.LoggingStreamInterceptor,
+			interceptor.RecoveryStreamInterceptor,
+		),
 	)
 	store := order.NewStore()
 	orderv1.RegisterOrderServiceServer(grpcServer, order.NewServer(store, userClient, productClient))

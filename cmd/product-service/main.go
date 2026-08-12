@@ -1,6 +1,7 @@
 package main
 
 import (
+	"ecommerce/internal/interceptor"
 	"log"
 	"net"
 
@@ -17,7 +18,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			interceptor.LoggingUnaryInterceptor,
+			interceptor.RecoveryUnaryInterceptor,
+		),
+	)
 
 	store := product.NewStore()
 	productv1.RegisterProductServiceServer(grpcServer, product.NewServer(store))

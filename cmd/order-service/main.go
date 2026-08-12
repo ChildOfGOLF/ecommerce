@@ -4,6 +4,7 @@ import (
 	orderv1 "ecommerce/gen/order/v1"
 	productv1 "ecommerce/gen/product/v1"
 	userv1 "ecommerce/gen/user/v1"
+	"ecommerce/internal/interceptor"
 	"ecommerce/internal/order"
 	"log"
 	"net"
@@ -34,7 +35,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			interceptor.LoggingUnaryInterceptor,
+			interceptor.RecoveryUnaryInterceptor,
+		),
+	)
 	store := order.NewStore()
 	orderv1.RegisterOrderServiceServer(grpcServer, order.NewServer(store, userClient, productClient))
 	reflection.Register(grpcServer)

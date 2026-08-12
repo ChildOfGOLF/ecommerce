@@ -2,6 +2,7 @@ package main
 
 import (
 	"ecommerce/internal/interceptor"
+	"ecommerce/internal/tlsutil"
 	"log"
 	"net"
 
@@ -18,7 +19,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	serverCreds, err := tlsutil.LoadServerTLSCredentials(
+		"certs/server.crt", "certs/server.key", "certs/ca.crt",
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	grpcServer := grpc.NewServer(
+		grpc.Creds(serverCreds),
 		grpc.ChainUnaryInterceptor(
 			interceptor.LoggingUnaryInterceptor,
 			interceptor.RecoveryUnaryInterceptor,

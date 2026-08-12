@@ -6,22 +6,37 @@ import (
 	userv1 "ecommerce/gen/user/v1"
 	"ecommerce/internal/interceptor"
 	"ecommerce/internal/order"
+	"ecommerce/internal/tlsutil"
 	"log"
 	"net"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
-	userConn, err := grpc.NewClient("127.0.0.1:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	userCreds, err := tlsutil.LoadClientTLSCredentials(
+		"certs/client.crt", "certs/client.key", "certs/ca.crt",
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	userConn, err := grpc.NewClient("127.0.0.1:50051", grpc.WithTransportCredentials(userCreds))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer userConn.Close()
 
-	productConn, err := grpc.NewClient("127.0.0.1:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	productCreds, err := tlsutil.LoadClientTLSCredentials(
+		"certs/client.crt",
+		"certs/client.key",
+		"certs/ca.crt",
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	productConn, err := grpc.NewClient("127.0.0.1:50052", grpc.WithTransportCredentials(productCreds))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +50,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	serverCreds, err := tlsutil.LoadServerTLSCredentials("certs/server.crt", "certs/server.key", "certs/ca.crt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	grpcServer := grpc.NewServer(
+		grpc.Creds(serverCreds),
 		grpc.ChainUnaryInterceptor(
 			interceptor.LoggingUnaryInterceptor,
 			interceptor.RecoveryUnaryInterceptor,

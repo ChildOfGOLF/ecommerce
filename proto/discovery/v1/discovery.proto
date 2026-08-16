@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package discovery.v1;
+
+option go_package = "ecommerce/gen/discovery/v1;discoveryv1";
+
+service DiscoveryService {
+  rpc Heartbeat(stream HeartbeatRequest) returns (stream HeartbeatResponse);
+  rpc Resolve(ResolveRequest) returns (ResolveResponse);
+}
+
+message HeartbeatRequest {
+  ServiceInstance instance = 1;
+}
+
+message HeartbeatResponse {
+  bool acknowledged = 1;
+  int32 interval_seconds = 2;
+}
+
+message ResolveRequest {
+  string service_name = 1;
+}
+
+message ResolveResponse {
+  repeated ServiceInstance instances = 1;
+}
+
+message ServiceInstance {
+  string service_name = 1;
+  string instance_id = 2;
+  string address = 3;
+}

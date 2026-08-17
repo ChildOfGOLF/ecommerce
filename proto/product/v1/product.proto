@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
 
 package product.v1;
 
@@ -14,11 +15,29 @@ message Product {
 }
 
 service ProductService {
-  rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
-  rpc GetProduct(GetProductRequest) returns (GetProductResponse);
-  rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+  rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse) {
+    option (google.api.http) = {
+      post: "/v1/products"
+      body: "*"
+    };
+  };
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse) {
+    option (google.api.http) = {
+      get: "/v1/products/{product_id}"
+    };
+  };
+  rpc ListProducts(ListProductsRequest) returns (ListProductsResponse) {
+    option (google.api.http) = {
+      get: "/v1/products"
+    };
+  };
   rpc WatchStock(WatchStockRequest) returns (stream StockUpdate);
-  rpc UpdateStock(UpdateStockRequest) returns (UpdateStockResponse);
+  rpc UpdateStock(UpdateStockRequest) returns (UpdateStockResponse) {
+    option (google.api.http) = {
+      patch: "/v1/products/{product_id}/stock"
+      body: "*"
+    };
+  };
 }
 
 message CreateProductRequest {

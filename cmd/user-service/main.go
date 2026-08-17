@@ -5,16 +5,26 @@ import (
 	"ecommerce/internal/tlsutil"
 	"log"
 	"net"
+	"os"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
 	userv1 "ecommerce/gen/user/v1"
 	"ecommerce/internal/user"
 )
 
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 func main() {
-	lis, err := net.Listen("tcp", ":50051")
+	lis, err := net.Listen("tcp", ":"+getEnv("PORT", "50051"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,10 +47,13 @@ func main() {
 	store := user.NewStore()
 	userv1.RegisterUserServiceServer(grpcServer, user.NewServer(store))
 
-	// for postman
+	healthServer := health.NewServer()
+	healthpb.RegisterHealthServer(grpcServer, healthServer)
+	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+
 	reflection.Register(grpcServer)
 
-	log.Println("50051")
+	log.Println(getEnv("PORT", "50051"))
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatal(err)
 	}

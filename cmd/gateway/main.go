@@ -8,10 +8,18 @@ import (
 	"ecommerce/internal/tlsutil"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 )
+
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
 
 func main() {
 	ctx := context.Background()
@@ -24,28 +32,29 @@ func main() {
 	}
 
 	err = productv1.RegisterProductServiceHandlerFromEndpoint(
-		ctx, mux, "127.0.0.1:50052", []grpc.DialOption{grpc.WithTransportCredentials(clientCreds)},
+		ctx, mux, getEnv("PRODUCT_SERVICE_ADDR", "127.0.0.1:50052"), []grpc.DialOption{grpc.WithTransportCredentials(clientCreds)},
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	err = userv1.RegisterUserServiceHandlerFromEndpoint(
-		ctx, mux, "127.0.0.1:50051", []grpc.DialOption{grpc.WithTransportCredentials(clientCreds)},
+		ctx, mux, getEnv("USER_SERVICE_ADDR", "127.0.0.1:50051"), []grpc.DialOption{grpc.WithTransportCredentials(clientCreds)},
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	err = orderv1.RegisterOrderServiceHandlerFromEndpoint(
-		ctx, mux, "127.0.0.1:50053", []grpc.DialOption{grpc.WithTransportCredentials(clientCreds)},
+		ctx, mux, getEnv("ORDER_SERVICE_ADDR", "127.0.0.1:50053"), []grpc.DialOption{grpc.WithTransportCredentials(clientCreds)},
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println(":8080")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	port := getEnv("PORT", "8080")
+	log.Println(":" + port)
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
 	}
 }

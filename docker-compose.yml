@@ -1,0 +1,92 @@
+services:
+  discovery-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: discovery-service
+    ports:
+      - "50054:50054"
+    environment:
+      PORT: "50054"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50054"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  user-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: user-service
+    ports:
+      - "50051:50051"
+    environment:
+      PORT: "50051"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50051"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  product-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: product-service
+    ports:
+      - "50052:50052"
+    environment:
+      PORT: "50052"
+      DISCOVERY_SERVICE_ADDR: "discovery-service:50054"
+      SELF_ADDR: "product-service:50052"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50052"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  order-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: order-service
+    ports:
+      - "50053:50053"
+    environment:
+      PORT: "50053"
+      USER_SERVICE_ADDR: "user-service:50051"
+      PRODUCT_SERVICE_ADDR: "product-service:50052"
+    depends_on:
+      user-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50053"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  gateway:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: gateway
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      USER_SERVICE_ADDR: "user-service:50051"
+      PRODUCT_SERVICE_ADDR: "product-service:50052"
+      ORDER_SERVICE_ADDR: "order-service:50053"
+    depends_on:
+      user-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
